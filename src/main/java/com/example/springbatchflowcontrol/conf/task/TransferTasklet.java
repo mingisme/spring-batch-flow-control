@@ -36,45 +36,32 @@ public class TransferTasklet implements Tasklet {
 
         int index = jobExecution.getExecutionContext().getInt(TransferConstant.TO_HANDLE_INDEX);
         log.info("--Current index {} --", index);
-        String handledContent = (String) stepExecution.getExecutionContext().get(TransferConstant.LOCK_ACCOUNT_STEP_HANDLED);
-        log.info("--Handled indies {} --", handledContent);
         ObjectMapper objectMapper = new ObjectMapper();
 
-        Set<Integer> handled = handledContent != null ? objectMapper.readValue(handledContent, new TypeReference<Set<Integer>>() {
-        }) : new HashSet<>();
+        String detail = jobExecution.getExecutionContext().getString(TransferConstant.DETAIL);
+        List<TransferItem> transferItems = objectMapper.readValue(detail, new TypeReference<List<TransferItem>>() {
+        });
 
-        if (handled == null || !handled.contains(index)) {
-            log.info("--Handle current index {} --", index);
-            String detail = jobExecution.getExecutionContext().getString(TransferConstant.DETAIL);
-            List<TransferItem> transferItems = objectMapper.readValue(detail, new TypeReference<List<TransferItem>>() {
-            });
+        TransferItem transferItem = transferItems.get(index);
 
-            TransferItem transferItem = transferItems.get(index);
+        String from = transferItem.getFrom();
+        String to = transferItem.getTo();
+        BigDecimal amount = transferItem.getAmount();
 
-            String from = transferItem.getFrom();
-            String to = transferItem.getTo();
-            BigDecimal amount = transferItem.getAmount();
-
-            Optional<Account> fromAccount = accountRepository.findById(from);
-            if (fromAccount.get() != null) {
-                Account account1 = fromAccount.get();
-                BigDecimal balance = account1.getBalance();
-                stepExecution.getExecutionContext().putString("transfer footprint", "Source: "+ from + ", Target: " + to + ", Amount: " + amount + ", Balance of source: " + balance);
-                if (balance.compareTo(amount) > 0) {
-                    log.info("--Do transfer index {}, from {}, to {}, amount {} --", index, from, to, amount);
-                    accountRepository.subtractBalance(from, amount);
-                    accountRepository.subtractBalance(to, amount.multiply(BigDecimal.valueOf(-1)));
-                } else {
-                    log.info("--Balance is not enough, from {}, balance {}, amount {}", from, balance, amount);
-                }
+        Optional<Account> fromAccount = accountRepository.findById(from);
+        if (fromAccount.get() != null) {
+            Account account1 = fromAccount.get();
+            BigDecimal balance = account1.getBalance();
+            stepExecution.getExecutionContext().putString("transfer footprint", "Source: " + from + ", Target: " + to + ", Amount: " + amount + ", Balance of source: " + balance);
+            if (balance.compareTo(amount) > 0) {
+                log.info("--Do transfer index {}, from {}, to {}, amount {} --", index, from, to, amount);
+                accountRepository.subtractBalance(from, amount);
+                accountRepository.subtractBalance(to, amount.multiply(BigDecimal.valueOf(-1)));
+            } else {
+                log.info("--Balance is not enough, from {}, balance {}, amount {}", from, balance, amount);
             }
-
-            handled.add(index);
-            stepExecution.getExecutionContext().putString(TransferConstant.LOCK_ACCOUNT_STEP_HANDLED, objectMapper.writeValueAsString(handled));
-            log.info("--Change index to {} --", index);
-        } else {
-            log.info("--Noop current index {} --", index);
         }
+
         log.info("--Transfer end--");
         return RepeatStatus.FINISHED;
     }

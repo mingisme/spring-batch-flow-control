@@ -37,39 +37,25 @@ public class LockAccountTasklet implements Tasklet {
 
         int index = jobExecution.getExecutionContext().getInt(TransferConstant.TO_HANDLE_INDEX);
         log.info("--Current index {} --", index);
-        String handledContent = (String) stepExecution.getExecutionContext().get(TransferConstant.LOCK_ACCOUNT_STEP_HANDLED);
-        log.info("--Handled indies {} --", handledContent);
         ObjectMapper objectMapper = new ObjectMapper();
 
-        Set<Integer> handled = handledContent != null ? objectMapper.readValue(handledContent, new TypeReference<Set<Integer>>() {
-        }) : new HashSet<>();
+        JobParameters jobParameters = jobExecution.getJobParameters();
+        String id = jobParameters.getString(TransferConstant.REQUEST_ID);
 
-        if (handled == null || !handled.contains(index)) {
-            log.info("--Handle current index {} --", index);
+        String detail = jobExecution.getExecutionContext().getString(TransferConstant.DETAIL);
+        List<TransferItem> transferItems = objectMapper.readValue(detail, new TypeReference<List<TransferItem>>() {
+        });
 
-            JobParameters jobParameters = jobExecution.getJobParameters();
-            String id = jobParameters.getString(TransferConstant.REQUEST_ID);
-
-            String detail = jobExecution.getExecutionContext().getString(TransferConstant.DETAIL);
-            List<TransferItem> transferItems = objectMapper.readValue(detail, new TypeReference<List<TransferItem>>() {
-            });
-
-            TransferItem transferItem = transferItems.get(index);
-            int compare = transferItem.getFrom().compareTo(transferItem.getTo());
-            if (compare < 0) {
-                lockAccount(transferItem.getFrom(), id);
-                lockAccount(transferItem.getTo(), id);
-            } else {
-                lockAccount(transferItem.getTo(), id);
-                lockAccount(transferItem.getFrom(), id);
-            }
-
-            handled.add(index);
-            stepExecution.getExecutionContext().putString(TransferConstant.LOCK_ACCOUNT_STEP_HANDLED, objectMapper.writeValueAsString(handled));
-            log.info("--Lock account end--");
+        TransferItem transferItem = transferItems.get(index);
+        int compare = transferItem.getFrom().compareTo(transferItem.getTo());
+        if (compare < 0) {
+            lockAccount(transferItem.getFrom(), id);
+            lockAccount(transferItem.getTo(), id);
         } else {
-            log.info("--Noop current index {} --", index);
+            lockAccount(transferItem.getTo(), id);
+            lockAccount(transferItem.getFrom(), id);
         }
+
         log.info("--Lock account end--");
         return RepeatStatus.FINISHED;
     }

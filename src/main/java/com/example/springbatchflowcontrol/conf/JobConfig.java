@@ -84,7 +84,7 @@ public class JobConfig {
 
     @Bean
     public Step unlockAccountStep() {
-        TaskletStep unlockAccountStep = stepBuilderFactory.get("unLockAccount").listener(unlockAccountStepListener)
+        TaskletStep unlockAccountStep = stepBuilderFactory.get("unlockAccount").listener(unlockAccountStepListener)
                 .tasklet(unlockAccountTasklet).allowStartIfComplete(true).build();
         return unlockAccountStep;
     }

@@ -32,6 +32,13 @@ public class TransferCheckTasklet implements Tasklet {
         if (deviation.compareTo(BigDecimal.valueOf(0.01)) > 0) {
             throw new RuntimeException("Deviation is so big: " + deviation);
         }
+
+        for (Account a : accounts) {
+            if (a.getBalance().compareTo(BigDecimal.valueOf(0)) < 0) {
+                throw new RuntimeException("Balance of account " + a.getAccountNumber() + " is less than 0");
+            }
+        }
+
         log.info("--Transfer check end--");
         return RepeatStatus.FINISHED;
     }

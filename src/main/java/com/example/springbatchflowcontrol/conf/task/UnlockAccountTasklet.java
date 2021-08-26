@@ -14,9 +14,7 @@ import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Slf4j
 @Component
@@ -33,38 +31,25 @@ public class UnlockAccountTasklet implements Tasklet {
 
         int index = jobExecution.getExecutionContext().getInt(TransferConstant.TO_HANDLE_INDEX);
         log.info("--Current index {} --", index);
-        String handledContent = (String) stepExecution.getExecutionContext().get(TransferConstant.LOCK_ACCOUNT_STEP_HANDLED);
-        log.info("--Handled indies {} --", handledContent);
+
         ObjectMapper objectMapper = new ObjectMapper();
+        String detail = jobExecution.getExecutionContext().getString(TransferConstant.DETAIL);
+        List<TransferItem> transferItems = objectMapper.readValue(detail, new TypeReference<List<TransferItem>>() {
+        });
 
-        Set<Integer> handled = handledContent != null ? objectMapper.readValue(handledContent, new TypeReference<Set<Integer>>() {
-        }) : new HashSet<>();
-
-        if (handled == null || !handled.contains(index)) {
-            log.info("--Handle current index {} --", index);
-            String detail = jobExecution.getExecutionContext().getString(TransferConstant.DETAIL);
-            List<TransferItem> transferItems = objectMapper.readValue(detail, new TypeReference<List<TransferItem>>() {
-            });
-
-            TransferItem transferItem = transferItems.get(index);
-            int compare = transferItem.getFrom().compareTo(transferItem.getTo());
-            if (compare > 0) {
-                unlockAccount(transferItem.getFrom());
-                unlockAccount(transferItem.getTo());
-            } else {
-                unlockAccount(transferItem.getTo());
-                unlockAccount(transferItem.getFrom());
-            }
-
-            handled.add(index);
-            stepExecution.getExecutionContext().putString(TransferConstant.LOCK_ACCOUNT_STEP_HANDLED, objectMapper.writeValueAsString(handled));
-
-            index = index + 1;
-            jobExecution.getExecutionContext().putInt(TransferConstant.TO_HANDLE_INDEX, index);
-            log.info("--Change index to {} --", index);
+        TransferItem transferItem = transferItems.get(index);
+        int compare = transferItem.getFrom().compareTo(transferItem.getTo());
+        if (compare > 0) {
+            unlockAccount(transferItem.getFrom());
+            unlockAccount(transferItem.getTo());
         } else {
-            log.info("--Noop current index {} --", index);
+            unlockAccount(transferItem.getTo());
+            unlockAccount(transferItem.getFrom());
         }
+
+        index = index + 1;
+        jobExecution.getExecutionContext().putInt(TransferConstant.TO_HANDLE_INDEX, index);
+        log.info("--Change index to {} --", index);
         log.info("--Unlock account end--");
         return RepeatStatus.FINISHED;
     }
