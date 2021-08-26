@@ -14,15 +14,22 @@ public class AccountController {
     private AccountService accountService;
 
     @GetMapping("/reset")
-    public String resetAccount(){
+    public String resetAccount() {
         accountService.resetAccounts();
         return "OK";
     }
 
     @GetMapping("/randomTransfer")
-    public String randomTransfer(){
+    public String randomTransfer() {
         accountService.randomTransfer();
         return "OK";
     }
+
+    @GetMapping("/concurrent")
+    public String concurrent() {
+        accountService.concurrentTransfer();
+        return "OK";
+    }
+
 
 }

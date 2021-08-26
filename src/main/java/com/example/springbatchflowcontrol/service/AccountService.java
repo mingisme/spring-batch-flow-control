@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Slf4j
 @Service
@@ -84,5 +86,12 @@ public class AccountService {
         JobParameters jobParameters = new JobParameters(parameterMap);
         jobLauncher.run(transferJob, jobParameters);
 
+    }
+
+    public void concurrentTransfer() {
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        for (int i = 0; i < 10; i++) {
+            executorService.submit(this::randomTransfer);
+        }
     }
 }
