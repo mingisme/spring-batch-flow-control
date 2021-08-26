@@ -19,4 +19,10 @@ public class AccountController {
         return "OK";
     }
 
+    @GetMapping("/randomTransfer")
+    public String randomTransfer(){
+        accountService.randomTransfer();
+        return "OK";
+    }
+
 }

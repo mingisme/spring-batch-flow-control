@@ -1,9 +1,9 @@
 package com.example.springbatchflowcontrol.conf;
 
-import com.example.springbatchflowcontrol.conf.task.CleanAccountTasklet;
-import com.example.springbatchflowcontrol.conf.task.CreateAccountTasklet;
-import com.example.springbatchflowcontrol.conf.task.PassTimeTasklet;
+import com.example.springbatchflowcontrol.conf.task.*;
+import com.example.springbatchflowcontrol.conf.task.listener.UnlockAccountStepListener;
 import lombok.SneakyThrows;
+import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.JobRegistry;
@@ -34,7 +34,6 @@ public class JobConfig {
     @Autowired
     private StepBuilderFactory stepBuilderFactory;
 
-
     @Autowired
     private CleanAccountTasklet cleanAccountTasklet;
 
@@ -44,30 +43,95 @@ public class JobConfig {
     @Autowired
     private PassTimeTasklet passTimeTasklet;
 
+    @Autowired
+    private TransferRequestLoadTasklet transferRequestLoadTasklet;
+
+    @Autowired
+    private LockAccountTasklet lockAccountTasklet;
+
+    @Autowired
+    private UnlockAccountTasklet unlockAccountTasklet;
+
+    @Autowired
+    private TransferTasklet transferTasklet;
+
+    @Autowired
+    private UnlockAccountStepListener unlockAccountStepListener;
+
+    @Autowired
+    private TransferCheckTasklet transferCheckTasklet;
 
     @Bean
-    public Step cleanAccountStep(){
+    public Step transferRequestLoadStep() {
+        TaskletStep transferRequestLoadStep = stepBuilderFactory.get("transferRequestLoad")
+                .tasklet(transferRequestLoadTasklet).build();
+        return transferRequestLoadStep;
+    }
+
+    @Bean
+    public Step lockAccountStep() {
+        TaskletStep lockAccountStep = stepBuilderFactory.get("lockAccount")
+                .tasklet(lockAccountTasklet).allowStartIfComplete(true).build();
+        return lockAccountStep;
+    }
+
+    @Bean
+    public Step transferStep(){
+        TaskletStep transferStep = stepBuilderFactory.get("transfer")
+                .tasklet(transferTasklet).allowStartIfComplete(true).build();
+        return transferStep;
+    }
+
+    @Bean
+    public Step unlockAccountStep() {
+        TaskletStep unlockAccountStep = stepBuilderFactory.get("unLockAccount").listener(unlockAccountStepListener)
+                .tasklet(unlockAccountTasklet).allowStartIfComplete(true).build();
+        return unlockAccountStep;
+    }
+
+    @Bean
+    public Step transferCheckStep(){
+        TaskletStep transferRequestLoadStep = stepBuilderFactory.get("transferCheck")
+                .tasklet(transferCheckTasklet).build();
+        return transferRequestLoadStep;
+    }
+
+    @Bean("transferJob")
+    public Job transferJob(){
+        Job transferJob = jobBuilderFactory.get("transfer")
+                .start(transferRequestLoadStep())
+                .next(lockAccountStep())
+                .next(transferStep())
+                .next(unlockAccountStep())
+                .on(TransferConstant.GO_AHEAD).to(lockAccountStep())
+                .from(unlockAccountStep()).on(ExitStatus.COMPLETED.getExitCode()).to(transferCheckStep())
+                .end().build();
+        return transferJob;
+    }
+
+    @Bean
+    public Step cleanAccountStep() {
         TaskletStep cleanAccountStep = stepBuilderFactory.get("cleanAccount")
                 .tasklet(cleanAccountTasklet).build();
         return cleanAccountStep;
     }
 
     @Bean
-    public Step createAccountStep(){
+    public Step createAccountStep() {
         TaskletStep createAccountStep = stepBuilderFactory.get("createAccount")
                 .tasklet(initAccountTasklet).build();
         return createAccountStep;
     }
 
     @Bean
-    public Step passTimeStep(){
+    public Step passTimeStep() {
         TaskletStep passTimeStep = stepBuilderFactory.get("passTime")
                 .tasklet(passTimeTasklet).build();
         return passTimeStep;
     }
 
-    @Bean("resetAccount")
-    public Job restAccountJob(){
+    @Bean("resetAccountJob")
+    public Job restAccountJob() {
         Job resetAccountJob = jobBuilderFactory.get("resetAccount")
                 .start(cleanAccountStep())
                 .next(createAccountStep())

@@ -1,6 +1,12 @@
 package com.example.springbatchflowcontrol.service;
 
+import com.example.springbatchflowcontrol.conf.task.TransferConstant;
+import com.example.springbatchflowcontrol.db.TransferRequestRepository;
+import com.example.springbatchflowcontrol.db.model.TransferItem;
+import com.example.springbatchflowcontrol.db.model.TransferRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameter;
 import org.springframework.batch.core.JobParameters;
@@ -9,9 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 
+@Slf4j
 @Service
 public class AccountService {
 
@@ -19,8 +26,15 @@ public class AccountService {
     private JobLauncher jobLauncher;
 
     @Autowired
-    @Qualifier("resetAccount")
+    @Qualifier("resetAccountJob")
     private Job resetAccountJob;
+
+    @Autowired
+    @Qualifier("transferJob")
+    private Job transferJob;
+
+    @Autowired
+    private TransferRequestRepository transferRequestRepository;
 
     @SneakyThrows
     public void resetAccounts() {
@@ -32,4 +46,43 @@ public class AccountService {
 
     }
 
+    @SneakyThrows
+    public void randomTransfer() {
+
+        List<TransferItem> transfers = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            int from = new Random().nextInt(9) + 1;
+            int to = from;
+            for (int j = 0; j < 100; j++) {
+                to = new Random().nextInt(9) + 1;
+                if (from != to) {
+                    break;
+                }
+            }
+            if (from == to) {
+                continue;
+            }
+            double amount = new Random().nextDouble() * 100;
+            transfers.add(new TransferItem("acc" + from, "acc" + to, new BigDecimal(amount)));
+        }
+
+        if (transfers.size() == 0) {
+            log.error("Transfer items should be more than 0");
+            return;
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String id = UUID.randomUUID().toString();
+
+        String detail = objectMapper.writeValueAsString(transfers);
+        log.info("id: {}, detail: {}", id, detail);
+        TransferRequest transferRequest = new TransferRequest(id, detail);
+        transferRequestRepository.save(transferRequest);
+
+        Map<String, JobParameter> parameterMap = new HashMap<>();
+        parameterMap.put(TransferConstant.REQUEST_ID, new JobParameter(id));
+        JobParameters jobParameters = new JobParameters(parameterMap);
+        jobLauncher.run(transferJob, jobParameters);
+
+    }
 }
