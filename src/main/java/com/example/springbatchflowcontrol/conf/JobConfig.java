@@ -10,6 +10,7 @@ import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobLauncher;
@@ -71,21 +72,21 @@ public class JobConfig {
     @Bean
     public Step lockAccountStep() {
         TaskletStep lockAccountStep = stepBuilderFactory.get("lockAccount")
-                .tasklet(lockAccountTasklet).allowStartIfComplete(true).build();
+                .tasklet(lockAccountTasklet).build();
         return lockAccountStep;
     }
 
     @Bean
     public Step transferStep(){
         TaskletStep transferStep = stepBuilderFactory.get("transfer")
-                .tasklet(transferTasklet).allowStartIfComplete(true).build();
+                .tasklet(transferTasklet).build();
         return transferStep;
     }
 
     @Bean
     public Step unlockAccountStep() {
         TaskletStep unlockAccountStep = stepBuilderFactory.get("unlockAccount").listener(unlockAccountStepListener)
-                .tasklet(unlockAccountTasklet).allowStartIfComplete(true).build();
+                .tasklet(unlockAccountTasklet).build();
         return unlockAccountStep;
     }
 
@@ -163,6 +164,13 @@ public class JobConfig {
         jobOperator.setJobLauncher(jobLauncher);
 
         return jobOperator;
+    }
+
+    @Bean
+    public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor(JobRegistry jobRegistry) {
+        JobRegistryBeanPostProcessor postProcessor = new JobRegistryBeanPostProcessor();
+        postProcessor.setJobRegistry(jobRegistry);
+        return postProcessor;
     }
 
 }

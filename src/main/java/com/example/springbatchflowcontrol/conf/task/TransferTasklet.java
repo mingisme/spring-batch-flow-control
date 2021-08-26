@@ -36,6 +36,7 @@ public class TransferTasklet implements Tasklet {
 
         int index = jobExecution.getExecutionContext().getInt(TransferConstant.TO_HANDLE_INDEX);
         log.info("--Current index {} --", index);
+
         ObjectMapper objectMapper = new ObjectMapper();
 
         String detail = jobExecution.getExecutionContext().getString(TransferConstant.DETAIL);
@@ -52,7 +53,7 @@ public class TransferTasklet implements Tasklet {
         if (fromAccount.get() != null) {
             Account account1 = fromAccount.get();
             BigDecimal balance = account1.getBalance();
-            stepExecution.getExecutionContext().putString("transfer footprint", "Source: " + from + ", Target: " + to + ", Amount: " + amount + ", Balance of source: " + balance);
+            stepExecution.getExecutionContext().putString("transfer.footprint", "Source: " + from + ", Target: " + to + ", Amount: " + amount + ", Balance of source: " + balance);
             if (balance.compareTo(amount) > 0) {
                 log.info("--Do transfer index {}, from {}, to {}, amount {} --", index, from, to, amount);
                 accountRepository.subtractBalance(from, amount);
