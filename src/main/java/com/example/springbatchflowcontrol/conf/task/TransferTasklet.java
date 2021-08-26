@@ -16,10 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
+import java.util.Random;
 
 @Slf4j
 @Component
@@ -31,6 +30,7 @@ public class TransferTasklet implements Tasklet {
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
         log.info("--Transfer begin--");
+
         StepExecution stepExecution = contribution.getStepExecution();
         JobExecution jobExecution = stepExecution.getJobExecution();
 
@@ -57,6 +57,7 @@ public class TransferTasklet implements Tasklet {
             if (balance.compareTo(amount) > 0) {
                 log.info("--Do transfer index {}, from {}, to {}, amount {} --", index, from, to, amount);
                 accountRepository.subtractBalance(from, amount);
+
                 accountRepository.subtractBalance(to, amount.multiply(BigDecimal.valueOf(-1)));
             } else {
                 log.info("--Balance is not enough, from {}, balance {}, amount {}", from, balance, amount);

@@ -72,21 +72,21 @@ public class JobConfig {
     @Bean
     public Step lockAccountStep() {
         TaskletStep lockAccountStep = stepBuilderFactory.get("lockAccount")
-                .tasklet(lockAccountTasklet).build();
+                .tasklet(lockAccountTasklet).allowStartIfComplete(true).build();
         return lockAccountStep;
     }
 
     @Bean
     public Step transferStep(){
         TaskletStep transferStep = stepBuilderFactory.get("transfer")
-                .tasklet(transferTasklet).build();
+                .tasklet(transferTasklet).allowStartIfComplete(true).build();
         return transferStep;
     }
 
     @Bean
     public Step unlockAccountStep() {
         TaskletStep unlockAccountStep = stepBuilderFactory.get("unlockAccount").listener(unlockAccountStepListener)
-                .tasklet(unlockAccountTasklet).build();
+                .tasklet(unlockAccountTasklet).allowStartIfComplete(true).build();
         return unlockAccountStep;
     }
 
