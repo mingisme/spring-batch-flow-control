@@ -32,7 +32,7 @@ public class TransferRequestLoadTasklet implements Tasklet {
         JobParameters jobParameters = jobExecution.getJobParameters();
         String id = jobParameters.getString(TransferConstant.REQUEST_ID);
         log.info("--Transfer request id is {}", id);
-        TransferRequest transferRequest = transferRequestRepository.getById(id);
+        TransferRequest transferRequest = transferRequestRepository.getOne(id);
         String detail = transferRequest.getDetail();
         log.info("--Transfer request detail is\n {}", detail);
         jobExecution.getExecutionContext().putString(TransferConstant.DETAIL, detail);
