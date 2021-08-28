@@ -17,12 +17,19 @@ import org.springframework.batch.core.launch.support.SimpleJobLauncher;
 import org.springframework.batch.core.launch.support.SimpleJobOperator;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.tasklet.TaskletStep;
+import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.task.configuration.EnableTask;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.Resource;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.util.ResourceUtils;
+
+import java.io.File;
+import java.io.FileReader;
 
 @Configuration
 @EnableTask
@@ -138,6 +145,31 @@ public class JobConfig {
                 .next(createAccountStep())
                 .next(passTimeStep()).build();
         return resetAccountJob;
+    }
+
+    @Bean
+    public Step helloStep(){
+        return stepBuilderFactory.get("helloStep")
+                .tasklet((s,c)-> {
+                    String id = s.getStepExecution().getJobExecution().getJobParameters().getString("id");
+                    s.getStepExecution().getExecutionContext().putString("hello", id);
+
+//                    File file = ResourceUtils.getFile("classpath:sample-2mb-text-file.txt");
+//                    String bigStr = FileCopyUtils.copyToString(new FileReader(file));
+//                    StringBuilder sb = new StringBuilder();
+//                    for(int i=0;i<1;i++) {
+//                        sb.append(bigStr);
+//                    }
+//                    s.getStepExecution().getExecutionContext().putString("plain.text", sb.toString());
+
+                    return RepeatStatus.FINISHED;
+                }).build();
+    }
+
+    @Bean("helloJob")
+    public Job helloJob(){
+        return jobBuilderFactory.get("helloJob")
+                .start(helloStep()).build();
     }
 
 
