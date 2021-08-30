@@ -38,6 +38,8 @@ public class AccountService {
     @Autowired
     private TransferRequestRepository transferRequestRepository;
 
+    ExecutorService executorService = Executors.newFixedThreadPool(5);
+
     @SneakyThrows
     public void resetAccounts() {
 
@@ -89,8 +91,8 @@ public class AccountService {
     }
 
     public void concurrentTransfer() {
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
-        for (int i = 0; i < 10; i++) {
+
+        for (int i = 0; i < 5; i++) {
             executorService.submit(this::randomTransfer);
         }
     }

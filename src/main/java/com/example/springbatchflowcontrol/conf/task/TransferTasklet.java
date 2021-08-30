@@ -57,12 +57,6 @@ public class TransferTasklet implements Tasklet {
             if (balance.compareTo(amount) > 0) {
                 log.info("--Do transfer index {}, from {}, to {}, amount {} --", index, from, to, amount);
                 accountRepository.subtractBalance(from, amount);
-
-                //Test restart, loop steps should be idempotent
-                if (new Random().nextFloat() < 0.25) {
-                    throw new RuntimeException("Unfortunate step");
-                }
-
                 accountRepository.subtractBalance(to, amount.multiply(BigDecimal.valueOf(-1)));
             } else {
                 log.info("--Balance is not enough, from {}, balance {}, amount {}", from, balance, amount);
